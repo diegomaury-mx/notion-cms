@@ -1,7 +1,14 @@
 # reference-code/
 
+> **GENERADO — NO EDITAR A MANO.**
+> Estos archivos se regeneran con `npm run sync:notion-cms` desde el repo
+> `diegomaury-mx/newlandingpage`. Cualquier edición manual aquí se pierde en la
+> siguiente sincronización. La fuente de verdad son `src/services/*`,
+> `src/content.config.ts`, `src/utils/env.ts` y `tools/verify-metrics.cjs` de ese
+> repo. Ver [`MANIFEST.json`](MANIFEST.json) para el commit y los hashes exactos.
+
 Copias **verbatim** de los archivos reales del pipeline CMS, tomadas del commit
-`diegomaury-mx/newlandingpage@fc8345e` (2026-08-23). Ya vienen comentadas en el
+`diegomaury-mx/newlandingpage@2f5fb0c` (2026-08-31). Ya vienen comentadas en el
 original (en español).
 
 **No son ejecutables en aislamiento** — dependen de `astro:content`,

@@ -1,0 +1,8 @@
+# Line endings normalizados a LF: reference-code/* son copias verbatim del repo
+# del sitio (que guarda LF) y sync-notion-cms.mjs las escribe con LF.
+* text=auto eol=lf
+
+# Artefactos generados por newlandingpage/tools/sync-notion-cms.mjs.
+# GitHub los colapsa en diffs y los marca como generados.
+reference-code/** linguist-generated=true
+reference-code/MANIFEST.json linguist-generated=true

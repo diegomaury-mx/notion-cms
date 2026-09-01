@@ -1,0 +1,53 @@
+{
+  "_comment": "GENERADO por newlandingpage/tools/sync-notion-cms.mjs. No editar reference-code/* a mano.",
+  "sourceRepo": "diegomaury-mx/newlandingpage",
+  "sourceCommit": "2f5fb0c",
+  "sourceCommitFull": "2f5fb0c7bbd8659f7c272e6b29a64df1854ac384",
+  "sourceCommitDate": "2026-08-31",
+  "generatedAt": "2026-09-01",
+  "files": [
+    {
+      "dst": "reference-code/notionClient.ts",
+      "src": "src/services/notionClient.ts",
+      "sha256": "3d9d6d54952805b62f8b2e41bd348c0db1640ba83c940aa93a8e84b8440c8d60"
+    },
+    {
+      "dst": "reference-code/notionLoaders.ts",
+      "src": "src/services/notionLoaders.ts",
+      "sha256": "e4fd3a0c2dca25ebba78526875dc528d6af5936551d8032d64278b24c71bcc71"
+    },
+    {
+      "dst": "reference-code/content.config.ts",
+      "src": "src/content.config.ts",
+      "sha256": "ffd973476efdb07d2d79a62125ab9ff1ccccd0d7e55dfb393d715f13ccd8bce2"
+    },
+    {
+      "dst": "reference-code/notionImageCache.ts",
+      "src": "src/services/notionImageCache.ts",
+      "sha256": "5786870462a892b6cb1679cacb40c1fa563cde668a79a21658164c25b02e3d45"
+    },
+    {
+      "dst": "reference-code/deeplTranslationCache.ts",
+      "src": "src/services/deeplTranslationCache.ts",
+      "sha256": "e1690012a2cf926d8d2025ac6a8d2dde672fddccf2d7790541b8ad681d429f89"
+    },
+    {
+      "dst": "reference-code/env.ts",
+      "src": "src/utils/env.ts",
+      "sha256": "6069b32afff02f53e20e14d85f2e5b2a60329035d34e507bc381300fd81446f3"
+    },
+    {
+      "dst": "reference-code/verify-metrics.cjs",
+      "src": "tools/verify-metrics.cjs",
+      "sha256": "70f0e954197a7bb424a9059b5132cac63d95245b3c5716db2dc769ad8137a1d4"
+    }
+  ],
+  "worker": {
+    "file": "reference-code/notion-deploy-relay.worker.js",
+    "note": "Snapshot de Cloudflare (workers_get_worker_code). No vive en git; se refresca a mano, fuera de este script.",
+    "sha256": "1b42f0e84316507e6c5281682674d7008572a0b4fe8c9145aa61c09936cce214"
+  },
+  "automation": {
+    "githubAction": "pendiente / opcional — no implementado en esta iteracion"
+  }
+}
