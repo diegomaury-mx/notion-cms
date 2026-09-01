@@ -8,7 +8,7 @@
 > repo. Ver [`MANIFEST.json`](MANIFEST.json) para el commit y los hashes exactos.
 
 Copias **verbatim** de los archivos reales del pipeline CMS, tomadas del commit
-`diegomaury-mx/newlandingpage@2f5fb0c` (2026-08-31). Ya vienen comentadas en el
+`diegomaury-mx/newlandingpage@4a7bebe` (2026-08-31). Ya vienen comentadas en el
 original (en español).
 
 **No son ejecutables en aislamiento** — dependen de `astro:content`,

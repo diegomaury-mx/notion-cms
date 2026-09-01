@@ -1,6 +1,6 @@
 # 02 · Contrato de datos Notion → Astro
 
-Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/content.config.ts` (commit ancla `2f5fb0c`). La API de Notion devuelve cada propiedad como un objeto discriminado por `type`; los helpers de `notionClient.ts` (`getTitle`, `getSelect`, `getMultiSelect`, `getCheckbox`, `getNumber`, `getUrl`, `getRelationIds`, `getStatus`, `getFileUrls`) extraen el valor plano de forma segura, devolviendo un default neutro si la propiedad falta o es de otro tipo. La validación estricta la hace Zod después.
+Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/content.config.ts` (commit ancla `4a7bebe`). La API de Notion devuelve cada propiedad como un objeto discriminado por `type`; los helpers de `notionClient.ts` (`getTitle`, `getSelect`, `getMultiSelect`, `getCheckbox`, `getNumber`, `getUrl`, `getRelationIds`, `getStatus`, `getFileUrls`) extraen el valor plano de forma segura, devolviendo un default neutro si la propiedad falta o es de otro tipo. La validación estricta la hace Zod después.
 
 ---
 
