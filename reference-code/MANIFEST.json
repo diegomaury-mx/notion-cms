@@ -1,25 +1,25 @@
 {
   "_comment": "GENERADO por newlandingpage/tools/sync-notion-cms.mjs. No editar reference-code/* a mano.",
   "sourceRepo": "diegomaury-mx/newlandingpage",
-  "sourceCommit": "4a7bebe",
-  "sourceCommitFull": "4a7bebe4b5dc8401e6551a10aaefdeaeafdffbfb",
-  "sourceCommitDate": "2026-08-31",
-  "generatedAt": "2026-09-01",
+  "sourceCommit": "cbea49c",
+  "sourceCommitFull": "cbea49c0d9ec9d64a86c09f50072cfb080b990bd",
+  "sourceCommitDate": "2026-09-09",
+  "generatedAt": "2026-09-10",
   "files": [
     {
       "dst": "reference-code/notionClient.ts",
       "src": "src/services/notionClient.ts",
-      "sha256": "3d9d6d54952805b62f8b2e41bd348c0db1640ba83c940aa93a8e84b8440c8d60"
+      "sha256": "9cd25363170289d042976372092d0bf2d41394c46bfee23e3e4d5ad9c1e023b2"
     },
     {
       "dst": "reference-code/notionLoaders.ts",
       "src": "src/services/notionLoaders.ts",
-      "sha256": "e4fd3a0c2dca25ebba78526875dc528d6af5936551d8032d64278b24c71bcc71"
+      "sha256": "98e81687fe259e98e03a562fbe13367eed40abb43440c0954d47ddf4f9e4258f"
     },
     {
       "dst": "reference-code/content.config.ts",
       "src": "src/content.config.ts",
-      "sha256": "ffd973476efdb07d2d79a62125ab9ff1ccccd0d7e55dfb393d715f13ccd8bce2"
+      "sha256": "2d17227f75f9f98930a93735112666ca4d1a53f66d0a2dada2f98cef2b5430a2"
     },
     {
       "dst": "reference-code/notionImageCache.ts",

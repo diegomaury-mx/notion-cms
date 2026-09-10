@@ -1,6 +1,6 @@
 # 02 · Contrato de datos Notion → Astro
 
-Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/content.config.ts` (commit ancla `4a7bebe`). La API de Notion devuelve cada propiedad como un objeto discriminado por `type`; los helpers de `notionClient.ts` (`getTitle`, `getSelect`, `getMultiSelect`, `getCheckbox`, `getNumber`, `getUrl`, `getRelationIds`, `getStatus`, `getFileUrls`) extraen el valor plano de forma segura, devolviendo un default neutro si la propiedad falta o es de otro tipo. La validación estricta la hace Zod después.
+Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/content.config.ts` (commit ancla `cbea49c`). La API de Notion devuelve cada propiedad como un objeto discriminado por `type`; los helpers de `notionClient.ts` (`getTitle`, `getSelect`, `getMultiSelect`, `getCheckbox`, `getNumber`, `getUrl`, `getRelationIds`, `getStatus`, `getFileUrls`) extraen el valor plano de forma segura, devolviendo un default neutro si la propiedad falta o es de otro tipo. La validación estricta la hace Zod después.
 
 ---
 
@@ -137,7 +137,37 @@ Schema Zod mínimo: `{ title: z.string(), markdown: z.string() }`. El loader tra
 
 ---
 
-## Regla transversal (las 4 fuentes)
+## 5. `📆 Meetups y Eventos: Ecosistema Tech & Innovation` → colección `events`
+
+`data_source_id: 7c2e4e81-be2f-428c-ad64-73c05beea6b5` · id de entrada = `page.id` de Notion. Quinta fuente (2026-09-09): agenda pública de solo lectura en `/eventos` (+ `/en/events`). Loader dedicado (`eventsLoader`), no `createDataSourceLoader`: necesita pre-filtrar por `Publicación` y resolver la relación `Evento principal` contra todas las filas. No lee el body de las páginas.
+
+**Filtro del loader:** `Publicación === "Publicado"` **Y** fecha de fin (o inicio si no hay fin) `>= hoy` en `America/Mexico_City`. Sin `Enlace Oficial` `http(s)://` no hay tarjeta.
+
+**Whitelist estricta (`makeEventDataSchema`, `.strict()`):** una propiedad fuera de esta lista rompe el build a propósito.
+
+| Propiedad Notion | Tipo | Campo | Notas |
+|---|---|---|---|
+| `Nombre` | title | `name` | — |
+| `Fecha del evento` | date | `start` / `end` | ISO date o datetime; `end` null si es de un solo día |
+| `Ciudad` | select | `city` | — |
+| `Modalidad` | select | `modality` | — |
+| `Tipo` | select | `type` | — |
+| `Categorías` | multi_select | `categories` | chips + filtro "Por categoría" |
+| `Organizador` | rich_text | `organizer` | — |
+| `Resumen` | rich_text | `summary` | `cleanSummary()` aplana viñetas/saltos de línea; único campo traducido a EN (`en.summary`, DeepL, fallback ES) |
+| `Enlace Oficial` | url | `officialUrl` | obligatorio; CTA "Ver evento" |
+| `Evento principal` | relation (self) | `parentName` | solo el nombre del evento padre |
+| `Status de Ticket` | select | `ticketStatus` | `ticketLabel()`: "Gratuito" solo si el valor exacto; cualquier otro → "Consultar en el enlace" |
+
+**`Sede` (tipo `place`): omitida en v1** — la API de Notion no la expone de forma estable. **`Publicación` se usa solo como filtro, no se renderiza.**
+
+**Auto-publish:** pendiente de alta en la suscripción de webhooks de `notion-deploy-relay`. Hasta entonces, un cambio en la base entra en el siguiente rebuild por otra causa.
+
+> Nota: `⭐ Testimonios Diego` → colección `testimonials` (también agregada en la tanda 2026-09) aún no está documentada en este contrato; pendiente.
+
+---
+
+## Regla transversal (las 5 fuentes)
 
 El build de Astro **falla en frío** (el sitio LIVE anterior permanece activo) si:
 

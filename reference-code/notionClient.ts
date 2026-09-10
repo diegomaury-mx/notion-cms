@@ -33,6 +33,14 @@ export const NOTION_SOURCES = {
   // Base "🖼️ CMS Imágenes — Portafolio D" (2026-07-25): slots de imagen que
   // hoy viven hardcodeados en el codigo (foto de Diego, logos de trust bar).
   imageSlots: "8dda9726-a42d-407d-ba84-334b4a1ef7a1",
+  // Base "⭐ Testimonios Diego - Typedream" (2026-09-09): reemplaza el embed de
+  // Senja con tarjetas propias renderizadas en build. La seccion Prueba social
+  // del home y la de /portfolio se arman con estas filas.
+  testimonials: "d2f2943f-9a0e-445b-bbad-16134ab2c977",
+  // Base "📆 Meetups y Eventos: Ecosistema Tech & Innovation" (2026-09-09):
+  // quinta fuente del CMS, agenda publica /eventos. Solo lectura, whitelist
+  // 8.2 del "Pipeline de Eventos · Data Contract v2".
+  events: "7c2e4e81-be2f-428c-ad64-73c05beea6b5",
 } as const;
 
 /** True si hay un NOTION_TOKEN disponible en el entorno (no valida que sea correcto). */
@@ -147,6 +155,17 @@ export function getUrl(
   return prop.url ?? undefined;
 }
 
+/** date -> { start, end } o `null` (celda vacia o de otro tipo). `end` es
+ * `null` cuando la fecha es un solo dia; ambos pueden ser date o datetime ISO. */
+export function getDateRange(
+  page: PageObjectResponse,
+  name: string,
+): { start: string; end: string | null } | null {
+  const prop = getProp(page, name);
+  if (prop?.type !== "date" || !prop.date?.start) return null;
+  return { start: prop.date.start, end: prop.date.end ?? null };
+}
+
 /** relation -> arreglo de IDs de paginas relacionadas (vacio si no aplica). */
 export function getRelationIds(
   page: PageObjectResponse,
@@ -251,6 +270,27 @@ export async function fetchImageSlots(): Promise<PageObjectResponse[]> {
   const notion = getNotionClient();
   const rows = await collectPaginatedAPI(notion.dataSources.query, {
     data_source_id: NOTION_SOURCES.imageSlots,
+  });
+  return rows.filter(isFullPage);
+}
+
+/** Todas las filas de la base `⭐ Testimonios Diego - Typedream` (colecc. testimonials). */
+export async function fetchTestimonials(): Promise<PageObjectResponse[]> {
+  const notion = getNotionClient();
+  const rows = await collectPaginatedAPI(notion.dataSources.query, {
+    data_source_id: NOTION_SOURCES.testimonials,
+  });
+  return rows.filter(isFullPage);
+}
+
+/** Todas las filas de la base de eventos (colecc. events). El loader filtra
+ * por `Publicación == Publicado` y vigencia; aqui se traen todas para poder
+ * resolver la relacion "Evento principal" a un titulo (el padre puede no
+ * estar publicado). */
+export async function fetchEvents(): Promise<PageObjectResponse[]> {
+  const notion = getNotionClient();
+  const rows = await collectPaginatedAPI(notion.dataSources.query, {
+    data_source_id: NOTION_SOURCES.events,
   });
   return rows.filter(isFullPage);
 }

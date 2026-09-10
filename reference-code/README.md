@@ -8,7 +8,7 @@
 > repo. Ver [`MANIFEST.json`](MANIFEST.json) para el commit y los hashes exactos.
 
 Copias **verbatim** de los archivos reales del pipeline CMS, tomadas del commit
-`diegomaury-mx/newlandingpage@4a7bebe` (2026-08-31). Ya vienen comentadas en el
+`diegomaury-mx/newlandingpage@cbea49c` (2026-09-09). Ya vienen comentadas en el
 original (en español).
 
 **No son ejecutables en aislamiento** — dependen de `astro:content`,
@@ -24,4 +24,4 @@ para leerse, no para correrse. La fuente de verdad es el repo privado del sitio.
 | `deeplTranslationCache.ts` | `src/services/deeplTranslationCache.ts` | [04](../docs/04-translation-pipeline.md) |
 | `env.ts` | `src/utils/env.ts` | [01](../docs/01-architecture.md) |
 | `verify-metrics.cjs` | `tools/verify-metrics.cjs` | [05](../docs/05-build-gates.md) |
-| `notion-deploy-relay.worker.js` | *(no vive en `newlandingpage`)* — Cloudflare Worker, snapshot vía `workers_get_worker_code` el 2026-08-31 | [06](../docs/06-auto-publish.md) |
+| `notion-deploy-relay.worker.js` | *(no vive en `newlandingpage`)* — Cloudflare Worker, snapshot vía `workers_get_worker_code` el 2026-09-09 | [06](../docs/06-auto-publish.md) |

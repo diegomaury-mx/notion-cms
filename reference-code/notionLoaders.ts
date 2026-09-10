@@ -23,9 +23,11 @@ import type {
 import {
   fetchBlockChildren,
   fetchCases,
+  fetchEvents,
   fetchImageSlots,
   fetchMetrics,
   fetchSiteCopy,
+  fetchTestimonials,
   getCheckbox,
   getFileUrls,
   getMultiSelect,
@@ -40,6 +42,12 @@ import {
 } from "./notionClient.ts";
 import { cacheNotionImage } from "./notionImageCache.ts";
 import { translateCached } from "./deeplTranslationCache.ts";
+import {
+  EVENT_TRANSLATABLE_FIELDS,
+  isPublishableEvent,
+  mapEvent,
+  todayInMexicoCity,
+} from "./notionEvents.ts";
 
 // Tope de fichas procesadas en paralelo por loader (fetchBlockChildren +
 // cacheNotionImage). Acotado a proposito: la API de Notion no es infinita,
@@ -303,6 +311,44 @@ function mapMetric(page: PageObjectResponse): Record<string, unknown> {
   };
 }
 
+const WELLA_WORKSHOP_ROLE = "Miembro de Wella México";
+// Filas cuyo texto es un stub que describe un video ausente (ej. Carlos
+// Ortegon) en vez de una cita real. Vuelven a entrar cuando exista el archivo
+// de video y su tratamiento propio (ver CLAUDE.md / memoria del rediseno).
+const VIDEO_STUB_QUOTE = /testimonio en video|video testimonial/i;
+
+/** True si la fila es una recomendacion de red profesional (no feedback de taller Wella) con cita de texto utilizable. */
+export function isProfessionalTestimonial(page: PageObjectResponse): boolean {
+  const quote = getRichText(page, "Review").trim();
+  return (
+    getRichText(page, "Role").trim() !== WELLA_WORKSHOP_ROLE &&
+    quote.length > 0 &&
+    !VIDEO_STUB_QUOTE.test(quote)
+  );
+}
+
+/** Fila de `⭐ Testimonios Diego - Typedream` -> data de la coleccion `testimonials`. */
+export function mapTestimonial(page: PageObjectResponse): Record<string, unknown> {
+  // `Review` es la cita original (corta, humana). `Texto` es una version
+  // expandida por IA — no se usa: rompe la regla de "no inventar" y es
+  // demasiado larga para una tarjeta en marquesina.
+  const quote = getRichText(page, "Review")
+    .replace(/<\/?mark>/g, "")
+    // Artefacto de codificacion del import de Typedream (`Â¡`/`Â¿` por `¡`/`¿`).
+    .replace(/Â([¡¿])/g, "$1")
+    .trim();
+  return {
+    name: getTitle(page, "Name"),
+    role: getRichText(page, "Role"),
+    company: getRichText(page, "company") || undefined,
+    quote,
+    // URL publica y estable de S3 (Senja); se descarga y cachea local en build
+    // (imageFields) para no depender de un host externo ni violar la CSP.
+    photo: getFileUrls(page, "Photo")[0],
+    link: getUrl(page, "url"),
+  };
+}
+
 /** Fila de `🖼️ CMS Imágenes — Portafolio D` -> data de la coleccion `imageSlots`. */
 export function mapImageSlot(page: PageObjectResponse): Record<string, unknown> {
   return {
@@ -440,6 +486,8 @@ export const METRIC_TRANSLATABLE_FIELDS = [
   "usageNote",
 ] as const;
 
+export const TESTIMONIAL_TRANSLATABLE_FIELDS = ["quote", "role"] as const;
+
 export const casesLoader: Loader = createDataSourceLoader(
   "notion-cases",
   fetchCases,
@@ -459,6 +507,16 @@ export const metricsLoader: Loader = createDataSourceLoader(
   [...METRIC_TRANSLATABLE_FIELDS],
 );
 
+/** Coleccion `testimonials`: id = page.id de Notion. Solo recomendaciones de red profesional. */
+export const testimonialsLoader: Loader = createDataSourceLoader(
+  "notion-testimonials",
+  async () => (await fetchTestimonials()).filter(isProfessionalTestimonial),
+  mapTestimonial,
+  (page) => page.id,
+  ["photo"],
+  [...TESTIMONIAL_TRANSLATABLE_FIELDS],
+);
+
 /** Coleccion `imageSlots`: id = Slot (title, llave tecnica unica del contrato). */
 export const imageSlotsLoader: Loader = createDataSourceLoader(
   "notion-image-slots",
@@ -467,6 +525,46 @@ export const imageSlotsLoader: Loader = createDataSourceLoader(
   (_page, data) => String(data.slot ?? ""),
   ["imageUrl"],
 );
+
+/**
+ * Colección `events` (quinta fuente): agenda pública /eventos.
+ * No usa `createDataSourceLoader` porque necesita (1) un pre-filtro con acceso
+ * a la propiedad `Publicación` y a la fecha antes de mapear, y (2) el mapa
+ * id->título de TODAS las filas para resolver la relación "Evento principal"
+ * (el padre puede no estar publicado). No lee el body de las páginas.
+ */
+export const eventsLoader: Loader = {
+  name: "notion-events",
+  load: async ({ store, logger, parseData }: LoaderContext) => {
+    store.clear();
+    if (!hasNotionToken()) {
+      if (import.meta.env.PROD) {
+        throw new Error(
+          "[notion-events] NOTION_TOKEN requerido para el build de produccion.",
+        );
+      }
+      logger.warn(
+        "[notion-events] NOTION_TOKEN ausente: coleccion vacia (scaffolding en dev).",
+      );
+      return;
+    }
+    const pages = await fetchEvents();
+    const nameById = new Map(pages.map((page) => [page.id, getTitle(page, "Nombre")]));
+    const today = todayInMexicoCity();
+    let published = 0;
+    for (const page of pages) {
+      const raw = mapEvent(page, nameById);
+      if (!isPublishableEvent(raw, getSelect(page, "Publicación"), today)) continue;
+      raw.en = await translateFields(raw, [...EVENT_TRANSLATABLE_FIELDS], logger);
+      const data = await parseData({ id: page.id, data: raw });
+      store.set({ id: page.id, data });
+      published += 1;
+    }
+    logger.info(
+      `[notion-events] ${published}/${pages.length} eventos publicados y vigentes.`,
+    );
+  },
+};
 
 /** Singleton `siteCopy`: id fijo `site`; cuerpo aplanado a Markdown. */
 export const siteCopyLoader: Loader = {

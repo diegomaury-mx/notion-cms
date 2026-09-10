@@ -17,11 +17,15 @@ import { defineCollection, z } from 'astro:content';
 import {
   CASE_TRANSLATABLE_FIELDS,
   METRIC_TRANSLATABLE_FIELDS,
+  TESTIMONIAL_TRANSLATABLE_FIELDS,
   casesLoader,
+  eventsLoader,
   imageSlotsLoader,
   metricsLoader,
   siteCopyLoader,
+  testimonialsLoader,
 } from './services/notionLoaders.ts';
+import { makeEventDataSchema } from './services/notionEvents.ts';
 
 /** Construye el schema Zod de `en` con las mismas claves que traduce el loader (una sola fuente, ver notionLoaders.ts). */
 function translatableEnSchema(fields: readonly string[]) {
@@ -219,6 +223,38 @@ const imageSlots = defineCollection({
   }),
 });
 
+// ─── Testimonios (fuente: ⭐ Testimonios Diego - Typedream) ────────────────────
+// Reemplaza el embed de Senja (2026-09-09). Solo recomendaciones de red
+// profesional — el feedback de taller Wella se filtra en el loader. El video
+// testimonial (Carlos Ortegon) esta fuera de alcance hasta que exista el
+// archivo en Notion + una ruta de cache propia para video.
+
+const testimonials = defineCollection({
+  loader: testimonialsLoader,
+  schema: z.object({
+    name: z.string().min(1),
+    role: z.string().default(''),
+    company: z.string().optional(),
+    quote: z.string().min(1),
+    // Ruta local (`/cms-media/notion/...`): el loader descarga y recomprime la
+    // foto en build (ver notionImageCache.ts). Ausente = tarjeta con iniciales.
+    photo: z.string().optional(),
+    link: httpUrl.optional(),
+    en: translatableEnSchema(TESTIMONIAL_TRANSLATABLE_FIELDS),
+  }),
+});
+
+// ─── Eventos (fuente: 📆 Meetups y Eventos, quinta fuente CMS) ────────────────
+// Whitelist de publicación estricta (Data Contract v2, sección 8.2): el schema
+// vive en services/notionEvents.ts (compartido con sus tests, que no pueden
+// importar `astro:content`). `.strict()` allí: propiedad fuera de la whitelist
+// rompe el build a propósito.
+
+const events = defineCollection({
+  loader: eventsLoader,
+  schema: makeEventDataSchema(z),
+});
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 export const collections = {
@@ -226,4 +262,6 @@ export const collections = {
   metrics,
   siteCopy,
   imageSlots,
+  testimonials,
+  events,
 };
