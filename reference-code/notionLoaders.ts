@@ -26,6 +26,7 @@ import {
   fetchEvents,
   fetchImageSlots,
   fetchMetrics,
+  fetchReservaCopy,
   fetchSiteCopy,
   fetchTestimonials,
   getCheckbox,
@@ -46,6 +47,7 @@ import {
   EVENT_TRANSLATABLE_FIELDS,
   isPublishableEvent,
   mapEvent,
+  readScope,
   todayInMexicoCity,
 } from "./notionEvents.ts";
 
@@ -554,7 +556,7 @@ export const eventsLoader: Loader = {
     let published = 0;
     for (const page of pages) {
       const raw = mapEvent(page, nameById);
-      if (!isPublishableEvent(raw, getSelect(page, "Publicación"), today)) continue;
+      if (!isPublishableEvent(raw, getSelect(page, "Publicación"), readScope(page), today)) continue;
       raw.en = await translateFields(raw, [...EVENT_TRANSLATABLE_FIELDS], logger);
       const data = await parseData({ id: page.id, data: raw });
       store.set({ id: page.id, data });
@@ -589,5 +591,31 @@ export const siteCopyLoader: Loader = {
     };
     const data = await parseData({ id: "site", data: raw });
     store.set({ id: "site", data });
+  },
+};
+
+/** Singleton `reservaCopy`: id fijo `reserva`; cuerpo aplanado a Markdown. */
+export const reservaCopyLoader: Loader = {
+  name: "notion-reserva-copy",
+  load: async ({ store, logger, parseData }: LoaderContext) => {
+    store.clear();
+    if (!hasNotionToken()) {
+      if (import.meta.env.PROD) {
+        throw new Error(
+          "[notion-reserva-copy] NOTION_TOKEN requerido para el build de produccion.",
+        );
+      }
+      logger.warn(
+        "[notion-reserva-copy] NOTION_TOKEN ausente: reservaCopy vacio (scaffolding en dev).",
+      );
+      return;
+    }
+    const { page, blocks } = await fetchReservaCopy();
+    const raw = {
+      title: getTitle(page, "title"),
+      markdown: blocksToMarkdown(blocks),
+    };
+    const data = await parseData({ id: "reserva", data: raw });
+    store.set({ id: "reserva", data });
   },
 };

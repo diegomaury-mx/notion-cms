@@ -29,6 +29,9 @@ import { readEnvVar } from "../utils/env.ts";
 export const NOTION_SOURCES = {
   cases: "88257bc9-e575-45e8-90df-f851f96e92f2",
   siteCopy: "d9ab8508-660a-43e8-ac45-9386dd7903d9",
+  // Pagina singleton "Reserva conmigo · diegomaury.mx (SSOT)" (2026-09-26):
+  // relanzamiento de la oferta de mentorias, mismo patron que siteCopy.
+  reservaCopy: "3e70fe3c-51c5-815a-9517-df6e6806a4ef",
   metrics: "213ea2d0-bffc-41b9-9877-92132551461c",
   // Base "🖼️ CMS Imágenes — Portafolio D" (2026-07-25): slots de imagen que
   // hoy viven hardcodeados en el codigo (foto de Diego, logos de trust bar).
@@ -129,6 +132,16 @@ export function getMultiSelect(
   const prop = getProp(page, name);
   if (prop?.type !== "multi_select") return [];
   return prop.multi_select.map((option) => option.name);
+}
+
+/** formula de tipo string -> su valor (`undefined` si no es formula string). */
+export function getFormulaString(
+  page: PageObjectResponse,
+  name: string,
+): string | undefined {
+  const prop = getProp(page, name);
+  if (prop?.type !== "formula" || prop.formula.type !== "string") return undefined;
+  return prop.formula.string ?? undefined;
 }
 
 /** checkbox -> boolean (false si no aplica). */
@@ -311,5 +324,19 @@ export async function fetchSiteCopy(): Promise<SiteCopy> {
     );
   }
   const blocks = await fetchBlockChildren(NOTION_SOURCES.siteCopy);
+  return { page, blocks };
+}
+
+/** Pagina singleton `Reserva conmigo · diegomaury.mx (SSOT)` + su arbol de bloques. */
+export async function fetchReservaCopy(): Promise<SiteCopy> {
+  const notion = getNotionClient();
+  const page = await notion.pages.retrieve({ page_id: NOTION_SOURCES.reservaCopy });
+  if (!isFullPage(page)) {
+    throw new Error(
+      "[notionClient] La pagina reservaCopy no devolvio un objeto completo. " +
+        "Verifica que la integracion tenga acceso a 'Reserva conmigo · diegomaury.mx (SSOT)'.",
+    );
+  }
+  const blocks = await fetchBlockChildren(NOTION_SOURCES.reservaCopy);
   return { page, blocks };
 }
