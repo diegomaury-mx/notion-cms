@@ -13,9 +13,10 @@ Guía de diagnóstico para cuando algo del CMS no se comporta. Ordenado por frec
 ## "Cambié algo en Notion y no se reconstruyó nada"
 
 1. **Versión de API de la integración de Notion.** Settings & members → Connections → la integración → API version. Debe estar en `2026-03-11` con todos los eventos habilitados. Con una versión vieja, los cambios en propiedades tipo archivo (reemplazar imagen) no emiten evento. → [06](06-auto-publish.md).
-2. **¿La fuente está en la suscripción?** Solo SSOT casos, CMS Imágenes y Copy Oficial disparan el Worker. Un cambio en `Métricas oficiales` no reconstruye solo — requiere sincronizar `metrics.json` + push.
-3. **Logs del Worker.** `mcp__plugin_cloudflare_cloudflare-observability__query_worker_observability` sobre `notion-deploy-relay`, o el dashboard de Cloudflare. Buscar `Notion event received:` y `Deploy hook triggered, status: 200`.
-4. **Firma HMAC.** Un 401 en los logs = `NOTION_WEBHOOK_SECRET` del Worker no coincide con el secreto de la suscripción de Notion.
+2. **¿La fuente está compartida con la integración?** La suscripción es por integración. Un cambio en `Métricas oficiales` reconstruye, pero el espejo `metrics.json` requiere sincronizarse + push.
+3. **¿Es la base de eventos?** Sus cambios esperan al cron `*/5` (debounce). Si `events_rebuild_pending` sigue en KV horas después, el cron no está disparando: ver [06](06-auto-publish.md#debounce-de-la-base-de-eventos).
+4. **Logs del Worker.** `mcp__plugin_cloudflare_cloudflare-observability__query_worker_observability` sobre `notion-deploy-relay`, o el dashboard de Cloudflare. Buscar `Notion event received:` y `Deploy hook triggered, status: 200`.
+5. **Firma HMAC.** Un 401 en los logs = `NOTION_WEBHOOK_SECRET` del Worker no coincide con el secreto de la suscripción de Notion.
 
 ## "El build falla con `Block type ai_block is not supported`"
 
@@ -48,6 +49,10 @@ Casi siempre: una URL cruda de S3 de Notion llegó al HTML en vez de la ruta cac
 El parser (`parseSiteCopy.ts`) corta por el patrón exacto `# S<n> · `. Si se borró o renombró el prefijo `# S<n> · ` de una sección, o si un bloque quedó con un salto de línea sobrante que descoloca el heading, esa sección deja de reconocerse **en silencio** (pasó con S8 el 2026-08-03). Verificar los encabezados en la columna "Versión Actual" de "Copy Oficial".
 
 También: no editar las páginas archivadas "Obsoleto · Secciones reemplazadas…" — el parser se queda con la primera aparición de cada `S<n>`, que es la vigente.
+
+## "Un campo sale vacío en el sitio aunque en Notion tiene texto"
+
+Los helpers de `notionClient.ts` devuelven vacío **sin error** si la propiedad fue renombrada o cambió de tipo (por ejemplo, select → multi_select, o un espacio sobrante en el nombre). Comparar el nombre exacto y el tipo contra `GET /v1/data_sources/{id}` y corregir el mapper. → [02](02-notion-data-contract.md).
 
 ## Verificar el estado real de un deploy
 

@@ -2,7 +2,7 @@
 
 ## Tesis
 
-El contenido editorial de `diegomaury.mx` (casos de portafolio, copy del home, cifras públicas, algunas imágenes) vive en **Notion**, no en el repo. Un build de **Astro** lo lee, lo valida y lo compila a **HTML estático**. **Cloudflare Pages** hostea el resultado y reconstruye en cada push a `master`. Un **Cloudflare Worker** permite que un cambio hecho solo en Notion también dispare ese rebuild.
+El contenido editorial de `diegomaury.mx` (casos de portafolio, copy del home, cifras públicas, imágenes, testimonios y agenda de eventos) vive en **Notion**, no en el repo. Un build de **Astro** lo lee, lo valida y lo compila a **HTML estático**. **Cloudflare Pages** hostea el resultado y reconstruye en cada push a `master`. Un **Cloudflare Worker** permite que un cambio hecho solo en Notion también dispare ese rebuild.
 
 No hay base de datos propia, ni API en runtime, ni CMS headless de terceros: Notion *es* el CMS, y el "pipeline" es un conjunto de loaders que corren durante `astro build`.
 
@@ -10,12 +10,14 @@ No hay base de datos propia, ni API en runtime, ni CMS headless de terceros: Not
 
 ```mermaid
 flowchart TB
-  subgraph N["Notion — 4 fuentes"]
+  subgraph N["Notion — 6 fuentes"]
     direction LR
     N1["SSOT - Portafolio Proyectos<br/><i>data source</i> · colección cases"]
     N2["Métricas oficiales<br/><i>data source</i> · colección metrics"]
     N3["Copy Oficial · diegomaury.mx<br/><i>página singleton</i> · colección siteCopy"]
     N4["CMS Imágenes<br/><i>data source</i> · colección imageSlots"]
+    N5["Testimonios<br/><i>data source</i> · colección testimonials"]
+    N6["Meetups y Eventos<br/><i>data source</i> · colección events"]
   end
 
   subgraph CLIENT["notionClient.ts"]
@@ -24,7 +26,7 @@ flowchart TB
 
   subgraph LOADERS["notionLoaders.ts — Content Layer"]
     LF["createDataSourceLoader()<br/>mapWithConcurrency (límite 6)"]
-    MC["mapCase / mapMetric / mapImageSlot"]
+    MC["mapCase / mapMetric / mapImageSlot / mapTestimonial / mapEvent"]
     BM["blocksToMarkdown()"]
   end
 
@@ -45,7 +47,7 @@ flowchart TB
 
   GATE["verify-metrics.cjs<br/><i>gate manual, pre-commit</i>"]
 
-  N1 & N2 & N3 & N4 --> NC --> LF --> MC --> BM
+  N1 & N2 & N3 & N4 & N5 & N6 --> NC --> LF --> MC --> BM
   LF --> IMG
   LF --> DPL
   MC --> ZOD --> P1 & P2 & P3
@@ -54,7 +56,7 @@ flowchart TB
   GATE -.->|exit 1 bloquea el commit| P1
 ```
 
-## Las cuatro colecciones
+## Las colecciones
 
 | Colección | Fuente Notion | Forma | Alimenta |
 |---|---|---|---|
@@ -62,6 +64,9 @@ flowchart TB
 | `metrics` | `Métricas oficiales — Portafolio D` (`213ea2d0-…`) | data source, ~11 filas | resolución de cifras en casos y home, `llms.txt` |
 | `siteCopy` | `Copy Oficial · diegomaury.mx (SSOT)` (`d9ab8508-…`) | **página única**, no database | todo el texto de `/` (S1–S8) y bloques `P1–P5` de `/portfolio` |
 | `imageSlots` | `🖼️ CMS Imágenes — Portafolio D` (`8dda9726-…`) | data source | foto de Diego y cinturón de logos del home |
+| `testimonials` | `⭐ Testimonios Diego - Typedream` (`d2f2943f-…`) | data source | marquesina de testimonios (home ES/EN y `/portfolio`) |
+| `events` | `📆 Meetups y Eventos` (`7c2e4e81-…`) | data source, loader propio | `/eventos` y `/en/events` |
+| `reservaCopy` | `Reserva conmigo` (`3e70fe3c-…`) | página singleton | sin consumidor desde 2026-09-26 (`/reserva` es redirect); se sigue cargando |
 
 Detalle campo por campo: [02 · Contrato de datos](02-notion-data-contract.md).
 
@@ -78,6 +83,8 @@ Todos los loaders de data source se construyen con la misma fábrica, `createDat
    - si hay `translatableFields`: `translateFields(raw, fields)` llena `raw.en` con las traducciones DeepL cacheadas.
    - `parseData({ id, data: raw })` — **aplica el schema Zod**; un dato inválido lanza y detiene el build.
    - `store.set({ id, data })`.
+
+`events` tampoco usa la fábrica: necesita pre-filtrar por `Publicación`/`Scope`/fecha y resolver la relación `Evento principal` contra todas las filas.
 
 `siteCopy` no usa la fábrica: es un singleton (`id: "site"`) cuyo cuerpo entero se aplana a un solo string Markdown y se parsea *después*, en runtime de las páginas, con `src/utils/parseSiteCopy.ts` (no en Zod).
 

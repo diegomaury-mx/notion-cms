@@ -1,10 +1,10 @@
 {
   "_comment": "GENERADO por newlandingpage/tools/sync-notion-cms.mjs. No editar reference-code/* a mano.",
   "sourceRepo": "diegomaury-mx/newlandingpage",
-  "sourceCommit": "e994c8a",
-  "sourceCommitFull": "e994c8a28ccd9f20277176e9ce728d4612b8b8a8",
-  "sourceCommitDate": "2026-10-20",
-  "generatedAt": "2026-10-20",
+  "sourceCommit": "9f77a87",
+  "sourceCommitFull": "9f77a87790cec5363e9a5e9fe244d9dd81b00f91",
+  "sourceCommitDate": "2026-11-25",
+  "generatedAt": "2026-11-26",
   "files": [
     {
       "dst": "reference-code/notionClient.ts",
@@ -14,7 +14,7 @@
     {
       "dst": "reference-code/notionLoaders.ts",
       "src": "src/services/notionLoaders.ts",
-      "sha256": "a5c8994f52d4826feebbd1c1d99889e64e5ac233784ed40e53b6e5d8dbf7a801"
+      "sha256": "f91cb0e5ee457a366bb22998cc8b1ab52f89a751779471a0a5aea3bf02f2824a"
     },
     {
       "dst": "reference-code/content.config.ts",

@@ -1,12 +1,12 @@
 # notion-cms
 
-Cómo está armado el CMS que alimenta **[diegomaury.mx](https://diegomaury.mx)**: un portafolio en Astro cuyo contenido —casos, copy, métricas e imágenes— vive en Notion y se compila a HTML estático en cada build, con auto-publicación desde Notion vía un Cloudflare Worker.
+Cómo está armado el CMS que alimenta **[diegomaury.mx](https://diegomaury.mx)**: un portafolio en Astro cuyo contenido —casos, copy, métricas, imágenes, testimonios y eventos— vive en Notion y se compila a HTML estático en cada build, con auto-publicación desde Notion vía un Cloudflare Worker.
 
 Este repo es una **vitrina de arquitectura**: documentación + extractos de código reales para entender el sistema sin acceso al repo del sitio. No es un paquete instalable ni la fuente de verdad del código.
 
 Los archivos de [`reference-code/`](reference-code/) son **artefactos generados**: se regeneran con `npm run sync:notion-cms` desde `newlandingpage` y no se editan a mano aquí. El commit y los hashes exactos viven en [`reference-code/MANIFEST.json`](reference-code/MANIFEST.json). Automatizar esa sincronización (GitHub Action que abra PR) es un paso futuro opcional, no implementado.
 
-- **Snapshot anclado a:** `newlandingpage@e994c8a` (2026-10-20)
+- **Snapshot anclado a:** `newlandingpage@9f77a87` (2026-11-25)
 - **Fuente viva del código:** repo privado `diegomaury-mx/newlandingpage` (`src/services/`, `src/content.config.ts`)
 - **Fuente viva del contenido:** workspace de Notion de Diego Maury
 - **Sitio en producción:** https://diegomaury.mx · **auto-deploy:** Cloudflare Pages (Git integration, rama `master`)
@@ -22,6 +22,8 @@ flowchart LR
     M[Métricas oficiales<br/>~11 cifras]
     S[Copy Oficial<br/>singleton S1–S8]
     I[CMS Imágenes<br/>slots de foto/logo]
+    TE[Testimonios]
+    E[Eventos<br/>agenda /eventos]
   end
 
   subgraph Build["astro build (Cloudflare Pages CI)"]
@@ -37,7 +39,7 @@ flowchart LR
     CF[Cloudflare Pages<br/>diegomaury.mx]
   end
 
-  C & M & S & I --> L --> Z --> H --> CF
+  C & M & S & I & TE & E --> L --> Z --> H --> CF
   L --> IC --> H
   L --> T --> H
   G -.bloquea.-> H
@@ -53,13 +55,14 @@ flowchart LR
 | # | Documento | Qué cubre |
 |---|-----------|-----------|
 | 01 | [Arquitectura](docs/01-architecture.md) | Flujo de datos completo, componentes, por qué build-time y no runtime |
-| 02 | [Contrato de datos Notion → Astro](docs/02-notion-data-contract.md) | Las 4 fuentes, mapeo propiedad→schema, reglas de publicación |
+| 02 | [Contrato de datos Notion → Astro](docs/02-notion-data-contract.md) | Las 6 fuentes, mapeo propiedad→schema, reglas de publicación |
 | 03 | [Pipeline de imágenes](docs/03-image-pipeline.md) | URLs S3 que expiran, descarga + recompresión WebP, versionado en git |
 | 04 | [Pipeline de traducción](docs/04-translation-pipeline.md) | DeepL en build, cache por hash, cola de rate-limit, degradación |
 | 05 | [Gates de build](docs/05-build-gates.md) | Guardrail Insignia (`superRefine`), gate `Publicable`, verificador de métricas |
 | 06 | [Auto-publicación](docs/06-auto-publish.md) | El Worker `notion-deploy-relay`, webhook de Notion, Deploy Hook, HMAC |
 | 07 | [Runbook](docs/07-runbook.md) | Fallos conocidos y cómo diagnosticarlos |
 | 08 | [Límites y deuda técnica](docs/08-limitations.md) | Qué está sin resolver y por qué, riesgos aceptados |
+| 09 | [Cómo replicarlo](docs/09-replicate.md) | Guía paso a paso para montar este mismo CMS en otro proyecto, con checklist |
 
 ## Extractos de código
 
@@ -69,7 +72,7 @@ En [`reference-code/`](reference-code/) están los archivos reales del pipeline,
 |---|---|
 | `notionClient.ts` | Cliente de lectura de Notion + helpers de extracción de propiedades |
 | `notionLoaders.ts` | Loaders de Astro Content Layer: mapean Notion → shape de colección |
-| `content.config.ts` | Schemas Zod de las 4 colecciones + guardrails de publicación |
+| `content.config.ts` | Schemas Zod de las colecciones + guardrails de publicación |
 | `notionImageCache.ts` | Descarga y recomprime imágenes de Notion en build |
 | `deeplTranslationCache.ts` | Traduce y cachea prosa para la versión `/en/*` |
 | `env.ts` | Lectura unificada de variables de entorno |

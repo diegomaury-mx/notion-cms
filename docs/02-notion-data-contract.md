@@ -1,6 +1,8 @@
 # 02 · Contrato de datos Notion → Astro
 
-Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/content.config.ts` (commit ancla `e994c8a`). La API de Notion devuelve cada propiedad como un objeto discriminado por `type`; los helpers de `notionClient.ts` (`getTitle`, `getSelect`, `getMultiSelect`, `getCheckbox`, `getNumber`, `getUrl`, `getRelationIds`, `getStatus`, `getFileUrls`) extraen el valor plano de forma segura, devolviendo un default neutro si la propiedad falta o es de otro tipo. La validación estricta la hace Zod después.
+Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/content.config.ts` (verificado 2026-11-25 contra el schema real de cada base). La API de Notion devuelve cada propiedad como un objeto discriminado por `type`; los helpers de `notionClient.ts` (`getTitle`, `getSelect`, `getMultiSelect`, `getCheckbox`, `getNumber`, `getUrl`, `getRelationIds`, `getStatus`, `getFileUrls`) extraen el valor plano de forma segura, devolviendo un default neutro si la propiedad falta o es de otro tipo. La validación estricta la hace Zod después.
+
+> **Consecuencia:** un renombre o cambio de tipo en Notion vacía el campo **en silencio**, sin error. Ante un campo vacío en el sitio, comparar nombre y tipo contra `GET /v1/data_sources/{id}` antes de asumir que falta contenido.
 
 ---
 
@@ -13,10 +15,10 @@ Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/cont
 | `title` | title | `title` | requerido (`z.string().min(1)`) |
 | `Titular de tarjeta` | rich_text | `cardHeadline` | override manual del título; prioridad sobre `resultHeadline`. Default `''` |
 | `Organización` | select | `organization` | **opcional** — 12/27 fichas no lo tienen |
-| `Tipo` | select | `type` | **opcional** — 11/27 fichas no lo tienen |
+| `Tipo` | **multi_select** | `type` | opcional; las opciones se unen con ` · ` (ej. `No-Code · Sistema RevOps/AI`) |
 | `Rol de Diego` | rich_text | `role` | requerido |
 | `Contexto tarjeta` | rich_text | `cardContext` | frase ~160 car. para la tarjeta. Default `''` |
-| `Objetivo con métrica y timeframe `  | rich_text | `objective` | **el nombre real lleva un espacio final** |
+| `Objetivo con métrica y timeframe` | rich_text | `objective` | **hoy no se lee**: el código busca el nombre con un espacio final que la propiedad ya no tiene. Activarlo alimentaría la meta description y el `.md` de cada ficha, así que espera a que el contenido de ese campo esté curado |
 | `Resultados y acciones clave realizadas` | rich_text | `resultsAndActions` | texto libre, no array |
 | `Datos cuantitativos` | rich_text | `quantData` | texto libre |
 | `Métrica ancla` | rich_text | `anchorMetric` | la cifra que sostiene el caso |
@@ -33,6 +35,7 @@ Mapeo verificado contra `reference-code/notionLoaders.ts` y `reference-code/cont
 | `Orden Insignia` | number | `insigniaOrder` | orden manual de los 4 casos Insignia en `/portfolio`; sin valor va al final |
 | `banner`, `logo` | files | `banner`, `logo` | primer archivo; cacheados localmente |
 | `Reflexión` | rich_text | `reflection` | cierre editable sin tocar el body; su sección solo renderiza si no está vacía. Default `''` |
+| `Slug`, `Fondo` | text / files | — | existen en Notion, no se leen. La URL de la ficha es `slugify(title)` |
 | *(cuerpo de la página)* | bloques | `body` | Markdown plano vía `blocksToMarkdown()` (soporta tablas ✔/✖) |
 
 ### Campos derivados (no son propiedades)
@@ -141,7 +144,7 @@ Schema Zod mínimo: `{ title: z.string(), markdown: z.string() }`. El loader tra
 
 `data_source_id: 7c2e4e81-be2f-428c-ad64-73c05beea6b5` · id de entrada = `page.id` de Notion. Quinta fuente (2026-09-09): agenda pública de solo lectura en `/eventos` (+ `/en/events`). Loader dedicado (`eventsLoader`), no `createDataSourceLoader`: necesita pre-filtrar por `Publicación` y resolver la relación `Evento principal` contra todas las filas. No lee el body de las páginas.
 
-**Filtro del loader:** `Publicación === "Publicado"` **Y** fecha de fin (o inicio si no hay fin) `>= hoy` en `America/Mexico_City`. Sin `Enlace Oficial` `http(s)://` no hay tarjeta.
+**Filtro del loader (`isPublishableEvent`):** `Publicación === "Publicado"` **Y** `Scope === "Dentro"` (fórmula interna, comparación exacta, no se publica) **Y** fecha de fin (o inicio si no hay fin) `>= hoy` en `America/Mexico_City`. Sin `Enlace Oficial` `http(s)://` no hay tarjeta (se corrige en Notion, no se normaliza en código).
 
 **Whitelist estricta (`makeEventDataSchema`, `.strict()`):** una propiedad fuera de esta lista rompe el build a propósito.
 
@@ -151,8 +154,9 @@ Schema Zod mínimo: `{ title: z.string(), markdown: z.string() }`. El loader tra
 | `Fecha del evento` | date | `start` / `end` | ISO date o datetime; `end` null si es de un solo día |
 | `Ciudad` | select | `city` | — |
 | `Modalidad` | select | `modality` | — |
-| `Tipo` | select | `type` | — |
-| `Categorías` | multi_select | `categories` | chips + filtro "Por categoría" |
+| `Tipo` | select | `type` | 1 valor; filtro |
+| `Categorías` | multi_select | `categories` | Temas (máx. 3); chips + filtro |
+| `Conceptos` | multi_select | `concepts` | puede venir vacío |
 | `Organizador` | rich_text | `organizer` | — |
 | `Resumen` | rich_text | `summary` | `cleanSummary()` aplana viñetas/saltos de línea; único campo traducido a EN (`en.summary`, DeepL, fallback ES) |
 | `Enlace Oficial` | url | `officialUrl` | obligatorio; CTA "Ver evento" |
@@ -161,13 +165,30 @@ Schema Zod mínimo: `{ title: z.string(), markdown: z.string() }`. El loader tra
 
 **`Sede` (tipo `place`): omitida en v1** — la API de Notion no la expone de forma estable. **`Publicación` se usa solo como filtro, no se renderiza.**
 
-**Auto-publish:** pendiente de alta en la suscripción de webhooks de `notion-deploy-relay`. Hasta entonces, un cambio en la base entra en el siguiente rebuild por otra causa.
-
-> Nota: `⭐ Testimonios Diego` → colección `testimonials` (también agregada en la tanda 2026-09) aún no está documentada en este contrato; pendiente.
+**Auto-publish:** cubierta por `notion-deploy-relay` con debounce: un cambio en una propiedad pública marca `events_rebuild_pending` en KV y el cron `*/5` hace un solo build. Ver [06](06-auto-publish.md). No se leen `Áreas` ni las propiedades internas de venta/IA. Las opciones de filtro se derivan siempre de los eventos publicados, nunca de listas fijas.
 
 ---
 
-## Regla transversal (las 5 fuentes)
+## 6. `⭐ Testimonios Diego - Typedream` → colección `testimonials`
+
+`data_source_id: d2f2943f-9a0e-445b-bbad-16134ab2c977` · id de entrada = `page.id`. Usa `createDataSourceLoader` con un pre-filtro (`isProfessionalTestimonial`).
+
+**Gate:** la fila entra solo si `Review` tiene texto, `Role` ≠ `Miembro de Wella México` (feedback de taller, no recomendación) y la cita no es un stub de video. `Review` es el **único** gate: con texto, se publica sola.
+
+| Propiedad Notion | Tipo | Campo | Notas |
+|---|---|---|---|
+| `Name` | title | `name` | requerido |
+| `Role` | rich_text | `role` | traducido a EN |
+| `company` | rich_text | `company` | opcional |
+| `Review` | rich_text | `quote` | cita publicada; se limpian `<mark>` y el artefacto `Â¡`/`Â¿` del import. `Texto` (versión expandida por IA) **nunca** se usa |
+| `Photo` | files | `photo` | cacheada como WebP; sin foto, la tarjeta muestra iniciales |
+| `url` | url | `link` | esquema `http(s)://` obligatorio: una URL inválida rompe el build |
+
+`en`: `TESTIMONIAL_TRANSLATABLE_FIELDS` (quote, role).
+
+---
+
+## Regla transversal (todas las fuentes)
 
 El build de Astro **falla en frío** (el sitio LIVE anterior permanece activo) si:
 

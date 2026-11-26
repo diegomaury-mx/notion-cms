@@ -250,7 +250,8 @@ async function mapCase(page: PageObjectResponse): Promise<Record<string, unknown
     resultHeadline: extractResultHeadline(blocks),
     cardHeadline: getRichText(page, "Titular de tarjeta"),
     organization: getSelect(page, "Organización"),
-    type: getSelect(page, "Tipo"),
+    // "Tipo" es multi_select en Notion: se une en un solo texto para la ficha.
+    type: getMultiSelect(page, "Tipo").join(" · ") || undefined,
     role: getRichText(page, "Rol de Diego"),
     cardContext: getRichText(page, "Contexto tarjeta"),
     // Ojo: el nombre real de la propiedad lleva un espacio al final.

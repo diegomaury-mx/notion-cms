@@ -51,7 +51,23 @@ sequenceDiagram
 
 ## Suscripción de Notion
 
-El Worker recibe la suscripción nativa de webhooks de Notion sobre las **3 fuentes editables** del CMS: SSOT casos, CMS Imágenes, Copy Oficial. (`Métricas oficiales` alimenta vía el espejo `metrics.json`, no directamente.)
+La suscripción de webhooks de Notion es **por integración**: cubre todas las fuentes compartidas con ella (SSOT casos, CMS Imágenes, Copy Oficial, Testimonios **y** la base de eventos). `Métricas oficiales` dispara un build, pero el espejo `metrics.json` requiere sincronizarse y hacer push aparte.
+
+### Debounce de la base de eventos
+
+La base de eventos la editan automatizaciones (Make, un agente) en ráfagas: decenas de eventos por minuto. Disparar un build por evento saturaba la cola de Cloudflare Pages. El Worker ahora:
+
+1. Identifica si el evento viene de la base de eventos (`EVENTS_PARENT_IDS` contra `data_source_id`/`database_id` del payload).
+2. Si sí: solo le importan los cambios en propiedades que el sitio publica (`EVENTS_PUBLIC_PROPERTY_IDS`, los IDs que lee `mapEvent`) o eventos estructurales (página creada, borrada o movida). Los IDs llegan URL-encoded y se decodifican antes de comparar.
+3. Un cambio relevante **no dispara build**: escribe `events_rebuild_pending` en `RELAY_KV`.
+4. El cron `*/5 * * * *` (`scheduled`) revisa la marca: si existe, llama al Deploy Hook **una vez** y la borra.
+5. El cron diario `0 13 * * *` UTC dispara el Deploy Hook para que el HTML deje de listar eventos pasados aunque nadie edite Notion, y borra la marca si el hook respondió ok.
+
+Las demás fuentes siguen disparando build directo, sin debounce.
+
+**Gotcha · cron registrado que no dispara:** tras el primer `PUT` de schedules, el `*/5` no se invocó durante ~15 h (el diario sí). Arrancó al re-aplicar el mismo `PUT`; causa desconocida. Después de cualquier cambio de schedules, verificar con GraphQL `workersInvocationsScheduled` que haya ≥2 invocaciones del `*/5` en 15 min. `GET /schedules` lista el cron aunque no dispare. Una marca `events_rebuild_pending` que persiste por horas es la señal.
+
+**Re-desplegar el Worker por API:** preservar los bindings (`keep_bindings: ["secret_text"]` + re-declarar `RELAY_KV`), subir el script **primero** y después hacer `PUT` de schedules con **ambos** crons.
 
 ### Gotcha crítico · versión de API de la integración
 
@@ -75,6 +91,6 @@ El proyecto de Cloudflare Pages llegó a tener dos deploy hooks ("Diego CMS" hu�
 |---|---|---|
 | `NOTION_WEBHOOK_SECRET` | secret | validar la firma HMAC del webhook |
 | `DEPLOY_HOOK_URL` | secret | Deploy Hook de Cloudflare Pages (`newlandingpage`, → "notion-cms-rebuild") |
-| `RELAY_KV` | KV namespace | guardar el `verification_token` del handshake |
+| `RELAY_KV` | KV namespace | guardar el `verification_token` del handshake y la marca `events_rebuild_pending` |
 
 Ninguno vive en un repo.
