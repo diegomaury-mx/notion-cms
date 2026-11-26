@@ -54,9 +54,14 @@ export function isAllowedImageUrl(url: string): boolean {
   );
 }
 
+// El archivo cacheado se sirve desde el mismo origen: una extension sacada de
+// la URL nunca puede ser html/js ni nada que el navegador ejecute.
+const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "svg"]);
+
 export function extensionFromUrl(url: string): string | undefined {
   const match = /\.([a-zA-Z0-9]+)$/.exec(new URL(url).pathname);
-  return match?.[1]?.toLowerCase();
+  const extension = match?.[1]?.toLowerCase();
+  return extension && IMAGE_EXTENSIONS.has(extension) ? extension : undefined;
 }
 
 export function sanitizeCacheKey(cacheKey: string): string {

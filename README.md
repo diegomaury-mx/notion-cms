@@ -6,7 +6,7 @@ Este repo es una **vitrina de arquitectura**: documentación + extractos de cód
 
 Los archivos de [`reference-code/`](reference-code/) son **artefactos generados**: se regeneran con `npm run sync:notion-cms` desde `newlandingpage` y no se editan a mano aquí. El commit y los hashes exactos viven en [`reference-code/MANIFEST.json`](reference-code/MANIFEST.json). Automatizar esa sincronización (GitHub Action que abra PR) es un paso futuro opcional, no implementado.
 
-- **Snapshot anclado a:** `newlandingpage@9f77a87` (2026-11-25)
+- **Snapshot anclado a:** `newlandingpage@d50aa04` (2026-11-25)
 - **Fuente viva del código:** repo privado `diegomaury-mx/newlandingpage` (`src/services/`, `src/content.config.ts`)
 - **Fuente viva del contenido:** workspace de Notion de Diego Maury
 - **Sitio en producción:** https://diegomaury.mx · **auto-deploy:** Cloudflare Pages (Git integration, rama `master`)

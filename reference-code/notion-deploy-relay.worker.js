@@ -5,6 +5,9 @@ export default {
     }
 
     const rawBody = await request.text();
+    if (rawBody.length > MAX_BODY_CHARS) {
+      return new Response("Payload Too Large", { status: 413 });
+    }
     const signature = request.headers.get("X-Notion-Signature");
 
     let parsed = null;
@@ -14,6 +17,12 @@ export default {
       parsed = null;
     }
 
+    // El payload de verificacion llega sin firma: solo se acepta mientras el
+    // secreto no exista (alta de la suscripcion). Con el secreto configurado,
+    // escribir aqui dejaria a cualquiera agotar las escrituras de KV.
+    if (parsed && parsed.verification_token && env.NOTION_WEBHOOK_SECRET) {
+      return new Response("OK", { status: 200 });
+    }
     if (parsed && parsed.verification_token) {
       console.log("Notion webhook verification payload received");
       try {
@@ -33,8 +42,7 @@ export default {
       return new Response("Secret not configured yet", { status: 503 });
     }
 
-    const expected = await hmacSha256Hex(env.NOTION_WEBHOOK_SECRET, rawBody);
-    if (("sha256=" + expected) !== signature) {
+    if (!(await verifySignature(env.NOTION_WEBHOOK_SECRET, rawBody, signature))) {
       return new Response("Invalid signature", { status: 401 });
     }
 
@@ -128,15 +136,21 @@ function isRelevantEventsChange(parsed) {
   return updated.some((id) => EVENTS_PUBLIC_PROPERTY_IDS.has(decodeId(id)));
 }
 
-async function hmacSha256Hex(secret, message) {
+const MAX_BODY_CHARS = 100_000;
+
+// Verifica "sha256=<hex>" con crypto.subtle.verify: la comparacion la hace el
+// runtime en tiempo constante (un !== sobre strings puede filtrar tiempo).
+async function verifySignature(secret, message, header) {
+  const match = /^sha256=([0-9a-f]{64})$/i.exec(header || "");
+  if (!match) return false;
+  const bytes = new Uint8Array(match[1].match(/../g).map((h) => parseInt(h, 16)));
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
     enc.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["verify"]
   );
-  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-  return [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return crypto.subtle.verify("HMAC", key, bytes, enc.encode(message));
 }

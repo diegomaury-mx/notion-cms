@@ -1,8 +1,8 @@
 {
   "_comment": "GENERADO por newlandingpage/tools/sync-notion-cms.mjs. No editar reference-code/* a mano.",
   "sourceRepo": "diegomaury-mx/newlandingpage",
-  "sourceCommit": "9f77a87",
-  "sourceCommitFull": "9f77a87790cec5363e9a5e9fe244d9dd81b00f91",
+  "sourceCommit": "d50aa04",
+  "sourceCommitFull": "d50aa04e86e08ad93ba60a1ee62f65ca33c38058",
   "sourceCommitDate": "2026-11-25",
   "generatedAt": "2026-11-26",
   "files": [
@@ -24,7 +24,7 @@
     {
       "dst": "reference-code/notionImageCache.ts",
       "src": "src/services/notionImageCache.ts",
-      "sha256": "5786870462a892b6cb1679cacb40c1fa563cde668a79a21658164c25b02e3d45"
+      "sha256": "2be333d03b116f792938f0c0597152a740525c5736b77f941220341d7a64113a"
     },
     {
       "dst": "reference-code/deeplTranslationCache.ts",
@@ -45,7 +45,7 @@
   "worker": {
     "file": "reference-code/notion-deploy-relay.worker.js",
     "note": "Snapshot de Cloudflare (workers_get_worker_code). No vive en git; se refresca a mano, fuera de este script.",
-    "sha256": "1b42f0e84316507e6c5281682674d7008572a0b4fe8c9145aa61c09936cce214"
+    "sha256": "6ffc769d05223504e7630076b81cec2418abcd145e3d49605d7d7422781b0a8e"
   },
   "automation": {
     "githubAction": "pendiente / opcional — no implementado en esta iteracion"
