@@ -13,7 +13,7 @@ Guía de diagnóstico para cuando algo del CMS no se comporta. Ordenado por frec
 ## "Cambié algo en Notion y no se reconstruyó nada"
 
 1. **Versión de API de la integración de Notion.** Settings & members → Connections → la integración → API version. Debe estar en `2026-03-11` con todos los eventos habilitados. Con una versión vieja, los cambios en propiedades tipo archivo (reemplazar imagen) no emiten evento. → [06](06-auto-publish.md).
-2. **¿La fuente está compartida con la integración?** La suscripción es por integración. Un cambio en `Métricas oficiales` reconstruye, pero el espejo `metrics.json` requiere sincronizarse + push.
+2. **¿La fuente está compartida con la integración?** Un cambio en `Métricas oficiales` **no** dispara rebuild: entra en el siguiente build por otra causa, y el espejo `metrics.json` requiere sincronizarse + push.
 3. **¿Es la base de eventos?** Sus cambios esperan al cron `*/5` (debounce). Si `events_rebuild_pending` sigue en KV horas después, el cron no está disparando: ver [06](06-auto-publish.md#debounce-de-la-base-de-eventos).
 4. **Logs del Worker.** `mcp__plugin_cloudflare_cloudflare-observability__query_worker_observability` sobre `notion-deploy-relay`, o el dashboard de Cloudflare. Buscar `Notion event received:` y `Deploy hook triggered, status: 200`.
 5. **Firma HMAC.** Un 401 en los logs = `NOTION_WEBHOOK_SECRET` del Worker no coincide con el secreto de la suscripción de Notion.

@@ -160,7 +160,7 @@ Schema Zod mínimo: `{ title: z.string(), markdown: z.string() }`. El loader tra
 | `Organizador` | rich_text | `organizer` | — |
 | `Resumen` | rich_text | `summary` | `cleanSummary()` aplana viñetas/saltos de línea; único campo traducido a EN (`en.summary`, DeepL, fallback ES) |
 | `Enlace Oficial` | url | `officialUrl` | obligatorio; CTA "Ver evento" |
-| `Evento principal` | relation (self) | `parentName` | solo el nombre del evento padre |
+| `Evento principal` | relation (self) | `parentName` | el código la busca, pero la relación ya no existe en la base: "Parte de …" no se muestra |
 | `Status de Ticket` | select | `ticketStatus` | `ticketLabel()`: "Gratuito" solo si el valor exacto; cualquier otro → "Consultar en el enlace" |
 
 **`Sede` (tipo `place`): omitida en v1** — la API de Notion no la expone de forma estable. **`Publicación` se usa solo como filtro, no se renderiza.**

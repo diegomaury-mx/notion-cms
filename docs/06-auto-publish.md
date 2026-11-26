@@ -51,7 +51,7 @@ sequenceDiagram
 
 ## Suscripción de Notion
 
-La suscripción de webhooks de Notion es **por integración**: cubre todas las fuentes compartidas con ella (SSOT casos, CMS Imágenes, Copy Oficial, Testimonios **y** la base de eventos). `Métricas oficiales` dispara un build, pero el espejo `metrics.json` requiere sincronizarse y hacer push aparte.
+La suscripción de webhooks de Notion es **por integración**. Hoy dispara rebuild con cambios en SSOT casos, CMS Imágenes, Copy Oficial, Testimonios y la base de eventos (esta con debounce, abajo). `Métricas oficiales` **no** dispara: sus cambios entran en el siguiente rebuild por otra causa, y el espejo `metrics.json` requiere sincronizarse y hacer push aparte.
 
 ### Debounce de la base de eventos
 
